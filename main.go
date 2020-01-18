@@ -3,11 +3,16 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"text/template"
 
+	"github.com/ailncode/gluaxmlpath"
+	"github.com/cjoudrey/gluahttp"
+	"github.com/cjoudrey/gluaurl"
+	"github.com/kohkimakimoto/gluayaml"
+	"github.com/yuin/gluare"
 	lua "github.com/yuin/gopher-lua"
+	luajson "layeh.com/gopher-json"
 )
 
 func getCSS() string {
@@ -25,7 +30,7 @@ func getCSS() string {
 			border-radius: 9px;
 			text-align: left;
 			margin: 2rem auto 2rem auto;
-			width: 1200px;
+			width: 960px;
 			padding: 1rem;
 
 			-webkit-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.30);
@@ -89,6 +94,9 @@ func listingHTML() string {
 	<head>
 		<title>Status Page</title>
 		<meta http-equiv="refresh" content="15">
+		<link rel="icon" 
+			type="image/png" 
+			href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjxzdmcgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgNjQgNjQiIGhlaWdodD0iNjRweCIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNjQgNjQiIHdpZHRoPSI2NHB4IiB4bWw6c3BhY2U9InByZXNlcnZlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48ZyBpZD0iTGF5ZXJfMSI+PGc+PGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgZmlsbD0iI0M3NUM1QyIgcj0iMzIiLz48L2c+PGcgb3BhY2l0eT0iMC4yIj48Zz48cGF0aCBkPSJNNDkuOTgyLDMxLjAwM2MtMC4wOTQtNS41MjItNC41NzQtMTAuNDQyLTEwLjEwNy0xMC40NDJjLTMuMiwwLTYuMDE5LDEuNjc0LTcuODc1LDQuMTMxICAgICBjLTEuODU2LTIuNDU3LTQuNjc2LTQuMTMxLTcuODc1LTQuMTMxYy01LjUzMywwLTEwLjAxMiw0LjkyMS0xMC4xMDcsMTAuNDQySDE0YzAsMC4wMzQsMC4wMDcsMC4wNjUsMC4wMDcsMC4wOTkgICAgIGMwLDAuMDI1LTAuMDA3LDAuMDQ5LTAuMDA3LDAuMDc2YzAsMC4xNTUsMC4wMzgsMC4yNzIsMC4wNDUsMC40MjFjMC40OTUsMTQuMDcxLDE3LjgxMywxOS44NCwxNy44MTMsMTkuODQgICAgIHMxNy41NzItNS43NjIsMTguMDkyLTE5LjgxOEM0OS45NTksMzEuNDY0LDUwLDMxLjM0LDUwLDMxLjE3OGMwLTAuMDI3LTAuMDA3LTAuMDUyLTAuMDA3LTAuMDc2YzAtMC4wMzYsMC4wMDctMC4wNjUsMC4wMDctMC4wOTkgICAgIEg0OS45ODJ6IiBmaWxsPSIjMjMxRjIwIi8+PC9nPjwvZz48Zz48Zz48cGF0aCBkPSJNNDkuOTgyLDI5LjAwM2MtMC4wOTQtNS41MjItNC41NzQtMTAuNDQyLTEwLjEwNy0xMC40NDJjLTMuMiwwLTYuMDE5LDEuNjc0LTcuODc1LDQuMTMxICAgICBjLTEuODU2LTIuNDU3LTQuNjc2LTQuMTMxLTcuODc1LTQuMTMxYy01LjUzMywwLTEwLjAxMiw0LjkyMS0xMC4xMDcsMTAuNDQySDE0YzAsMC4wMzQsMC4wMDcsMC4wNjUsMC4wMDcsMC4wOTkgICAgIGMwLDAuMDI1LTAuMDA3LDAuMDQ5LTAuMDA3LDAuMDc2YzAsMC4xNTUsMC4wMzgsMC4yNzIsMC4wNDUsMC40MjFjMC40OTUsMTQuMDcxLDE3LjgxMywxOS44NCwxNy44MTMsMTkuODQgICAgIHMxNy41NzItNS43NjIsMTguMDkyLTE5LjgxOEM0OS45NTksMjkuNDY0LDUwLDI5LjM0LDUwLDI5LjE3OGMwLTAuMDI3LTAuMDA3LTAuMDUyLTAuMDA3LTAuMDc2YzAtMC4wMzYsMC4wMDctMC4wNjUsMC4wMDctMC4wOTkgICAgIEg0OS45ODJ6IiBmaWxsPSIjRkZGRkZGIi8+PC9nPjwvZz48L2c+PGcgaWQ9IkxheWVyXzIiLz48L3N2Zz4=">
 		<style>
 			{{.CSS}}
 		</style>
@@ -145,21 +153,6 @@ type Check interface {
 	Status() Status
 }
 
-type check struct {
-	description string
-	statusFn    func() Status
-}
-
-func (c check) Description() string { return c.description }
-func (c check) Status() Status      { return c.statusFn() }
-
-func MakeCheck(desc string, fn func() Status) Check {
-	return check{
-		description: desc,
-		statusFn:    fn,
-	}
-}
-
 type luaStatusResult struct {
 	isHealthy bool
 }
@@ -187,7 +180,18 @@ func (c luaCheck) Status() Status {
 	defer state.Close()
 	state.SetGlobal("setHealthy", state.NewFunction(result.IsHealthy))
 	state.SetGlobal("setSick", state.NewFunction(result.IsSick))
-	_ = state.DoString(c.luaScript)
+	state.PreloadModule("http", gluahttp.NewHttpModule(&http.Client{}).Loader)
+	state.PreloadModule("re", gluare.Loader)
+	state.PreloadModule("json", luajson.Loader)
+	state.PreloadModule("yaml", gluayaml.Loader)
+	state.PreloadModule("url", gluaurl.Loader)
+	state.PreloadModule("xmlpath", gluaxmlpath.Loader)
+	err := state.DoString(c.luaScript)
+	if err != nil {
+		fmt.Println(c.luaScript)
+		fmt.Println(err)
+		return Sick
+	}
 
 	if result.isHealthy {
 		return Healthy
@@ -196,7 +200,7 @@ func (c luaCheck) Status() Status {
 	return Sick
 }
 
-func MakeLuaCheck(desc string, luaScript string) Check {
+func MakeCheck(desc string, luaScript string) luaCheck {
 	return luaCheck{
 		description: desc,
 		luaScript:   luaScript,
@@ -210,13 +214,19 @@ type Service interface {
 
 type service struct {
 	name   string
-	checks []Check
+	checks []luaCheck
 }
 
-func (s service) Name() string    { return s.name }
-func (s service) Checks() []Check { return s.checks }
+func (s service) Name() string { return s.name }
+func (s service) Checks() []Check {
+	checks := []Check{}
+	for _, c := range s.checks {
+		checks = append(checks, c)
+	}
+	return checks
+}
 
-func MakeService(name string, checks []Check) Service {
+func MakeService(name string, checks []luaCheck) Service {
 	return service{
 		name:   name,
 		checks: checks,
@@ -224,34 +234,10 @@ func MakeService(name string, checks []Check) Service {
 }
 
 func main() {
-	exampleService := MakeService(
-		"Example Service",
-		[]Check{
-			MakeCheck(
-				"Random number is even",
-				func() Status {
-					if rand.Intn(100)%2 == 0 {
-						return Healthy
-					}
-					return Sick
-				},
-			),
-			MakeCheck(
-				"Random number is odd",
-				func() Status {
-					if rand.Intn(100)%2 != 0 {
-						return Healthy
-					}
-					return Sick
-				},
-			),
-		},
-	)
-
 	luaService := MakeService(
 		"Lua Service",
-		[]Check{
-			MakeLuaCheck(
+		[]luaCheck{
+			MakeCheck(
 				"Random number is even",
 				`
 			    	math.randomseed( os.time() )
@@ -263,12 +249,12 @@ func main() {
 			    	end
 				`,
 			),
-			MakeLuaCheck(
+			MakeCheck(
 				"Random number is odd",
 				`
 			    	math.randomseed( os.time() )
 			    	num = math.random(1, 2)
-			    	if num % 2 != 0 then
+			    	if num % 2 ~= 0 then
 			    		setHealthy()
 			    	else
 			    		setSick()
@@ -276,8 +262,20 @@ func main() {
 				`,
 			),
 			MakeCheck(
-				"Always Healthy",
-				func() Status { return Healthy },
+				"Always healthy",
+				"setHealthy()",
+			),
+			MakeCheck(
+				"HTTP Status check",
+				`
+			local http = require("http")
+			response, error_message = http.request("GET", "http://example.com")
+       		if response.status_code == 200 then
+				setHealthy()
+       		else
+       			setSick()
+       		end
+				`,
 			),
 		},
 	)
@@ -288,7 +286,7 @@ func main() {
 			Services []Service
 		}{
 			CSS:      getCSS(),
-			Services: []Service{luaService, exampleService},
+			Services: []Service{luaService},
 		}
 
 		html := listingHTML()
