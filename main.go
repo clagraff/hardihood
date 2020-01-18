@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"net/http"
 	"text/template"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 func getCSS() string {
@@ -86,6 +88,7 @@ func listingHTML() string {
 <html>
 	<head>
 		<title>Status Page</title>
+		<meta http-equiv="refresh" content="15">
 		<style>
 			{{.CSS}}
 		</style>
@@ -157,6 +160,49 @@ func MakeCheck(desc string, fn func() Status) Check {
 	}
 }
 
+type luaStatusResult struct {
+	isHealthy bool
+}
+
+func (l *luaStatusResult) IsHealthy(_ *lua.LState) int {
+	l.isHealthy = true
+	return 1
+}
+
+func (l *luaStatusResult) IsSick(_ *lua.LState) int {
+	l.isHealthy = false
+	return 1
+}
+
+type luaCheck struct {
+	description string
+	luaScript   string
+}
+
+func (c luaCheck) Description() string { return c.description }
+func (c luaCheck) Status() Status {
+	result := new(luaStatusResult)
+
+	state := lua.NewState()
+	defer state.Close()
+	state.SetGlobal("setHealthy", state.NewFunction(result.IsHealthy))
+	state.SetGlobal("setSick", state.NewFunction(result.IsSick))
+	_ = state.DoString(c.luaScript)
+
+	if result.isHealthy {
+		return Healthy
+	}
+
+	return Sick
+}
+
+func MakeLuaCheck(desc string, luaScript string) Check {
+	return luaCheck{
+		description: desc,
+		luaScript:   luaScript,
+	}
+}
+
 type Service interface {
 	Name() string
 	Checks() []Check
@@ -179,7 +225,7 @@ func MakeService(name string, checks []Check) Service {
 
 func main() {
 	exampleService := MakeService(
-		"example",
+		"Example Service",
 		[]Check{
 			MakeCheck(
 				"Random number is even",
@@ -202,13 +248,47 @@ func main() {
 		},
 	)
 
+	luaService := MakeService(
+		"Lua Service",
+		[]Check{
+			MakeLuaCheck(
+				"Random number is even",
+				`
+			    	math.randomseed( os.time() )
+			    	num = math.random(1, 2)
+			    	if num % 2 == 0 then
+			    		setHealthy()
+			    	else
+			    		setSick()
+			    	end
+				`,
+			),
+			MakeLuaCheck(
+				"Random number is odd",
+				`
+			    	math.randomseed( os.time() )
+			    	num = math.random(1, 2)
+			    	if num % 2 != 0 then
+			    		setHealthy()
+			    	else
+			    		setSick()
+			    	end
+				`,
+			),
+			MakeCheck(
+				"Always Healthy",
+				func() Status { return Healthy },
+			),
+		},
+	)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		page := struct {
 			CSS      string
 			Services []Service
 		}{
 			CSS:      getCSS(),
-			Services: []Service{exampleService},
+			Services: []Service{luaService, exampleService},
 		}
 
 		html := listingHTML()

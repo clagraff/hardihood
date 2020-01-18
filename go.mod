@@ -3,6 +3,7 @@ module github.com/clagraff/hardihood
 go 1.13
 
 require (
+	github.com/cjoudrey/gluahttp v0.0.0-20190104103309-101c19a37344 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
@@ -14,6 +15,7 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/valyala/fasttemplate v1.1.0 // indirect
+	github.com/yuin/gopher-lua v0.0.0-20191220021717-ab39c6098bdb
 	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
