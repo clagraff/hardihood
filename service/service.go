@@ -21,7 +21,7 @@ func (s service) Checkups() []checkup.Checkup {
 	return checks
 }
 
-func MakeService(name string, checks []checkup.Checkup) Service {
+func Make(name string, checks []checkup.Checkup) Service {
 	return service{
 		name:   name,
 		checks: checks,

@@ -7,59 +7,10 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/BurntSushi/toml"
-	"github.com/clagraff/hardihood/checkup"
+	"github.com/clagraff/hardihood/cfg"
 	"github.com/clagraff/hardihood/service"
 	"github.com/clagraff/hardihood/static"
 )
-
-type config struct {
-	Title   string
-	Favicon string
-	Refresh int
-	Checks  []struct {
-		Service     string
-		Description string
-		Lua         string
-	}
-	Scripts []struct {
-		Lua string
-	}
-}
-
-func (c config) Services() []service.Service {
-	serviceNames := []string{}
-	serviceSet := make(map[string][]checkup.Checkup)
-
-	for _, cfgCheck := range c.Checks {
-		serviceName := cfgCheck.Service
-		check := checkup.MakeCheckup(cfgCheck.Description, cfgCheck.Lua)
-
-		if _, ok := serviceSet[serviceName]; !ok {
-			serviceSet[serviceName] = []checkup.Checkup{check}
-			serviceNames = append(serviceNames, serviceName)
-		} else {
-			serviceSet[serviceName] = append(serviceSet[serviceName], check)
-		}
-	}
-
-	allServices := []service.Service{}
-	for _, serviceName := range serviceNames {
-		checks := serviceSet[serviceName]
-		allServices = append(
-			allServices,
-			service.MakeService(serviceName, checks),
-		)
-	}
-
-	return allServices
-}
-
-func LoadConfig(data string) (config, error) {
-	cfg := config{}
-	_, err := toml.Decode(data, &cfg)
-	return cfg, err
-}
 
 func main() {
 	contents, err := ioutil.ReadFile("config.toml")
@@ -67,7 +18,7 @@ func main() {
 		panic(err)
 	}
 
-	cfg, err := LoadConfig(string(contents))
+	config, err := cfg.LoadConfig(string(contents))
 	if err != nil {
 		panic(err)
 	}
@@ -76,11 +27,11 @@ func main() {
 		page := struct {
 			CSS      string
 			Services []service.Service
-			Config   config
+			Config   cfg.Config
 		}{
 			CSS:      static.DefaultCSS(),
-			Services: cfg.Services(),
-			Config:   cfg,
+			Services: config.Services(),
+			Config:   config,
 		}
 
 		html := static.HTML()

@@ -1,4 +1,4 @@
-package checkup
+package scripting
 
 import (
 	"fmt"
@@ -11,35 +11,84 @@ import (
 	"github.com/kohkimakimoto/gluayaml"
 	"github.com/yuin/gluare"
 	lua "github.com/yuin/gopher-lua"
-	luajson "layeh.com/gopher-json"
 )
 
-type Checkup interface {
-	Description() string
-	Status() status.Status
-}
-
-type luaStatusResult struct {
+type statusResult struct {
 	isHealthy bool
 }
 
-func (l *luaStatusResult) IsHealthy(_ *lua.LState) int {
+func (l *statusResult) SetHealthy(_ *lua.LState) int {
 	l.isHealthy = true
 	return 1
 }
 
-func (l *luaStatusResult) IsSick(_ *lua.LState) int {
+func (l *statusResult) SetSick(_ *lua.LState) int {
 	l.isHealthy = false
 	return 1
 }
 
-type luaCheckup struct {
-	description string
-	luaScript   string
+type Script interface {
+	Name() string
+	Code() string
 }
 
-func (c luaCheckup) Description() string { return c.description }
-func (c luaCheckup) Status() status.Status {
+type script struct {
+	name string
+	code string
+}
+
+func (s script) Name() string { return s.name }
+func (s script) Code() string { return s.code }
+
+func MakeScript(name, code string) Script {
+	return script{
+		name: name,
+		code: code,
+	}
+}
+
+type preload struct {
+	name string
+	fn   *lua.LGFunction
+}
+
+type script struct {
+	name string
+	fn   *lua.LFunction
+}
+
+type State interface {
+	Execute(string) status.Status
+	Preload(string, lua.LGFunction)
+	Script(string, *lua.LFunction)
+}
+
+type state struct {
+	preloads []preload
+	scripts  []script
+}
+
+func (s *state) Preload(name string, fn *lua.LGFunction) {
+	s.preloads = append(
+		s.preloads,
+		preload{
+			name: name,
+			fn:   fn,
+		},
+	)
+}
+
+func (s *state) Script(name string, fn *lua.LFunction) {
+	s.scripts = append(
+		s.scripts,
+		script{
+			name: name,
+			fn:   fn,
+		},
+	)
+}
+
+func Execute(code string) status.Status {
 	result := new(luaStatusResult)
 
 	state := lua.NewState()
@@ -99,11 +148,4 @@ return M
 	}
 
 	return status.Sick
-}
-
-func Make(desc string, luaScript string) Checkup {
-	return luaCheckup{
-		description: desc,
-		luaScript:   luaScript,
-	}
 }
