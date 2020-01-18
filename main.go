@@ -188,7 +188,42 @@ func (c luaCheck) Status() Status {
 	state.PreloadModule("yaml", gluayaml.Loader)
 	state.PreloadModule("url", gluaurl.Loader)
 	state.PreloadModule("xmlpath", gluaxmlpath.Loader)
-	err := state.DoString(c.luaScript)
+
+	greetings := `
+local M = {}
+
+local function sayMyName()
+  print('general kenobi')
+end
+
+function M.sayHello()
+  print('Why hello there')
+  sayMyName()
+end
+
+return M
+`
+	fn, err := state.LoadString(greetings)
+	if err != nil {
+		fmt.Println(err)
+		return Sick
+	}
+
+	state.SetField(
+		state.GetField(
+			state.GetField(
+				state.Get(
+					lua.EnvironIndex,
+				),
+				"package",
+			),
+			"preload",
+		),
+		"greetings",
+		fn,
+	)
+
+	err = state.DoString(c.luaScript)
 	if err != nil {
 		fmt.Println(c.luaScript)
 		fmt.Println(err)
@@ -243,6 +278,9 @@ type config struct {
 		Service     string
 		Description string
 		Lua         string
+	}
+	Scripts []struct {
+		Lua string
 	}
 }
 

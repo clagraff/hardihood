@@ -45,3 +45,28 @@ else
     setSick()
 end
 """
+
+[[checks]]
+service = "Module Loading"
+description = "Load a module"
+lua = """
+local greetings = require("greetings")
+greetings.sayHello()
+"""
+
+[[modules]]
+name = "greetings"
+lua = """
+local M = {}
+
+local function sayMyName()
+  print('Hrunkner')
+end
+
+function M.sayHello()
+  print('Why hello there')
+  sayMyName()
+end
+
+return M
+"""
