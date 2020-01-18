@@ -3,7 +3,7 @@ module github.com/clagraff/hardihood
 go 1.13
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/BurntSushi/toml v0.3.1
 	github.com/ailncode/gluaxmlpath v0.0.0-20161126153117-6ce478ecb4a6
 	github.com/cjoudrey/gluahttp v0.0.0-20190104103309-101c19a37344
 	github.com/cjoudrey/gluaurl v0.0.0-20161028222611-31cbb9bef199

@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"text/template"
 
+	"github.com/BurntSushi/toml"
 	"github.com/ailncode/gluaxmlpath"
 	"github.com/cjoudrey/gluahttp"
 	"github.com/cjoudrey/gluaurl"
@@ -233,52 +235,58 @@ func MakeService(name string, checks []luaCheck) Service {
 	}
 }
 
+type config struct {
+	Checks []struct {
+		Service     string
+		Description string
+		Lua         string
+	}
+}
+
+func (c config) Services() []Service {
+	serviceNames := []string{}
+	services := make(map[string][]luaCheck)
+
+	for _, cfgCheck := range c.Checks {
+		serviceName := cfgCheck.Service
+		check := MakeCheck(cfgCheck.Description, cfgCheck.Lua)
+
+		if _, ok := services[serviceName]; !ok {
+			services[serviceName] = []luaCheck{check}
+			serviceNames = append(serviceNames, serviceName)
+		} else {
+			services[serviceName] = append(services[serviceName], check)
+		}
+	}
+
+	allServices := []Service{}
+	for _, serviceName := range serviceNames {
+		checks := services[serviceName]
+		allServices = append(
+			allServices,
+			MakeService(serviceName, checks),
+		)
+	}
+
+	return allServices
+}
+
+func LoadConfig(data string) (config, error) {
+	cfg := config{}
+	_, err := toml.Decode(data, &cfg)
+	return cfg, err
+}
+
 func main() {
-	luaService := MakeService(
-		"Lua Service",
-		[]luaCheck{
-			MakeCheck(
-				"Random number is even",
-				`
-			    	math.randomseed( os.time() )
-			    	num = math.random(1, 2)
-			    	if num % 2 == 0 then
-			    		setHealthy()
-			    	else
-			    		setSick()
-			    	end
-				`,
-			),
-			MakeCheck(
-				"Random number is odd",
-				`
-			    	math.randomseed( os.time() )
-			    	num = math.random(1, 2)
-			    	if num % 2 ~= 0 then
-			    		setHealthy()
-			    	else
-			    		setSick()
-			    	end
-				`,
-			),
-			MakeCheck(
-				"Always healthy",
-				"setHealthy()",
-			),
-			MakeCheck(
-				"HTTP Status check",
-				`
-			local http = require("http")
-			response, error_message = http.request("GET", "http://example.com")
-       		if response.status_code == 200 then
-				setHealthy()
-       		else
-       			setSick()
-       		end
-				`,
-			),
-		},
-	)
+	contents, err := ioutil.ReadFile("config.toml")
+	if err != nil {
+		panic(err)
+	}
+
+	cfg, err := LoadConfig(string(contents))
+	if err != nil {
+		panic(err)
+	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		page := struct {
@@ -286,7 +294,7 @@ func main() {
 			Services []Service
 		}{
 			CSS:      getCSS(),
-			Services: []Service{luaService},
+			Services: cfg.Services(),
 		}
 
 		html := listingHTML()

@@ -1,0 +1,43 @@
+[[checks]]
+service = "Lua Service"
+description = "Random number is even"
+lua = """
+math.randomseed( os.time() )
+num = math.random(1, 2)
+if num % 2 == 0 then
+    setHealthy()
+else
+    setSick()
+end  
+"""
+
+[[checks]]
+service = "Lua Service"
+description = "Random number is odd"
+lua = """
+math.randomseed( os.time() )
+num = math.random(1, 2)
+if num % 2 ~= 0 then
+    setHealthy()
+else
+    setSick()
+end  
+"""
+
+[[checks]]
+service = "Lua Service"
+description = "Always healthy"
+lua = "setHealthy()"
+
+[[checks]]
+service = "HTTP Checker"
+description = "HTTP status check"
+lua = """
+local http = require("http")
+response, error_message = http.request("GET", "http://example.com")
+if response.status_code == 200 then
+    setHealthy()
+else
+    setSick()
+end
+"""
