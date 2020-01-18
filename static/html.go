@@ -18,7 +18,7 @@ func HTML() string {
 		<section>
 			<header>{{.Name}}</header>
 			<ul>
-				{{range .Checks}}
+				{{range .Checkups}}
 				<li>
 					{{.Description}}
 					{{$status := .Status}}
