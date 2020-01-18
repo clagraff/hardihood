@@ -5,7 +5,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/clagraff/hardihood/badge.svg?branch=master)](https://coveralls.io/github/clagraff/hardihood?branch=master)
 
 # Hardihood
-Status monitoring & alerting, done simply. 
+Status monitoring & alerting, done simply. Create status-checks using Lua script,
+which get displayed on a simple, clear monitor.
 
 
 ## Development
