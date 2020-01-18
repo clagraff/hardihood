@@ -94,11 +94,11 @@ func listingHTML() string {
 	return `
 <html>
 	<head>
-		<title>Status Page</title>
-		<meta http-equiv="refresh" content="15">
+		<title>{{.Config.Title}}</title>
+		<meta http-equiv="refresh" content="{{.Config.Refresh}}">
 		<link rel="icon" 
 			type="image/png" 
-			href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjxzdmcgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgNjQgNjQiIGhlaWdodD0iNjRweCIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNjQgNjQiIHdpZHRoPSI2NHB4IiB4bWw6c3BhY2U9InByZXNlcnZlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48ZyBpZD0iTGF5ZXJfMSI+PGc+PGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgZmlsbD0iI0M3NUM1QyIgcj0iMzIiLz48L2c+PGcgb3BhY2l0eT0iMC4yIj48Zz48cGF0aCBkPSJNNDkuOTgyLDMxLjAwM2MtMC4wOTQtNS41MjItNC41NzQtMTAuNDQyLTEwLjEwNy0xMC40NDJjLTMuMiwwLTYuMDE5LDEuNjc0LTcuODc1LDQuMTMxICAgICBjLTEuODU2LTIuNDU3LTQuNjc2LTQuMTMxLTcuODc1LTQuMTMxYy01LjUzMywwLTEwLjAxMiw0LjkyMS0xMC4xMDcsMTAuNDQySDE0YzAsMC4wMzQsMC4wMDcsMC4wNjUsMC4wMDcsMC4wOTkgICAgIGMwLDAuMDI1LTAuMDA3LDAuMDQ5LTAuMDA3LDAuMDc2YzAsMC4xNTUsMC4wMzgsMC4yNzIsMC4wNDUsMC40MjFjMC40OTUsMTQuMDcxLDE3LjgxMywxOS44NCwxNy44MTMsMTkuODQgICAgIHMxNy41NzItNS43NjIsMTguMDkyLTE5LjgxOEM0OS45NTksMzEuNDY0LDUwLDMxLjM0LDUwLDMxLjE3OGMwLTAuMDI3LTAuMDA3LTAuMDUyLTAuMDA3LTAuMDc2YzAtMC4wMzYsMC4wMDctMC4wNjUsMC4wMDctMC4wOTkgICAgIEg0OS45ODJ6IiBmaWxsPSIjMjMxRjIwIi8+PC9nPjwvZz48Zz48Zz48cGF0aCBkPSJNNDkuOTgyLDI5LjAwM2MtMC4wOTQtNS41MjItNC41NzQtMTAuNDQyLTEwLjEwNy0xMC40NDJjLTMuMiwwLTYuMDE5LDEuNjc0LTcuODc1LDQuMTMxICAgICBjLTEuODU2LTIuNDU3LTQuNjc2LTQuMTMxLTcuODc1LTQuMTMxYy01LjUzMywwLTEwLjAxMiw0LjkyMS0xMC4xMDcsMTAuNDQySDE0YzAsMC4wMzQsMC4wMDcsMC4wNjUsMC4wMDcsMC4wOTkgICAgIGMwLDAuMDI1LTAuMDA3LDAuMDQ5LTAuMDA3LDAuMDc2YzAsMC4xNTUsMC4wMzgsMC4yNzIsMC4wNDUsMC40MjFjMC40OTUsMTQuMDcxLDE3LjgxMywxOS44NCwxNy44MTMsMTkuODQgICAgIHMxNy41NzItNS43NjIsMTguMDkyLTE5LjgxOEM0OS45NTksMjkuNDY0LDUwLDI5LjM0LDUwLDI5LjE3OGMwLTAuMDI3LTAuMDA3LTAuMDUyLTAuMDA3LTAuMDc2YzAtMC4wMzYsMC4wMDctMC4wNjUsMC4wMDctMC4wOTkgICAgIEg0OS45ODJ6IiBmaWxsPSIjRkZGRkZGIi8+PC9nPjwvZz48L2c+PGcgaWQ9IkxheWVyXzIiLz48L3N2Zz4=">
+			href="{{.Config.Favicon}}">
 		<style>
 			{{.CSS}}
 		</style>
@@ -236,7 +236,10 @@ func MakeService(name string, checks []luaCheck) Service {
 }
 
 type config struct {
-	Checks []struct {
+	Title   string
+	Favicon string
+	Refresh int
+	Checks  []struct {
 		Service     string
 		Description string
 		Lua         string
@@ -292,9 +295,11 @@ func main() {
 		page := struct {
 			CSS      string
 			Services []Service
+			Config   config
 		}{
 			CSS:      getCSS(),
 			Services: cfg.Services(),
+			Config:   cfg,
 		}
 
 		html := listingHTML()
