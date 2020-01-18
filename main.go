@@ -5,14 +5,11 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"text/template"
 )
 
-func listingHTML() string {
+func getCSS() string {
 	return `
-<html>
-	<head>
-		<title>Status Page</title>
-		<style>
 		body {
 			background-color: #fdfdfd;
 			text-align: center;
@@ -80,6 +77,17 @@ func listingHTML() string {
 			color: white;
 			font-weight: bold;
 		}
+
+`
+}
+
+func listingHTML() string {
+	return `
+<html>
+	<head>
+		<title>Status Page</title>
+		<style>
+			{{.CSS}}
 		</style>
 	</head>
 	<body>
@@ -138,7 +146,25 @@ func main() {
 	})
 
 	http.HandleFunc("/hi", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, listingHTML())
+		page := struct {
+			CSS string
+		}{
+			CSS: getCSS(),
+		}
+
+		html := listingHTML()
+
+		tmpl, err := template.New("page").Parse(html)
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+			return
+		}
+
+		err = tmpl.Execute(w, page)
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+			return
+		}
 	})
 
 	log.Fatal(http.ListenAndServe(":8081", nil))
