@@ -11,117 +11,12 @@ import (
 	"github.com/ailncode/gluaxmlpath"
 	"github.com/cjoudrey/gluahttp"
 	"github.com/cjoudrey/gluaurl"
+	"github.com/clagraff/hardihood/static"
 	"github.com/kohkimakimoto/gluayaml"
 	"github.com/yuin/gluare"
 	lua "github.com/yuin/gopher-lua"
 	luajson "layeh.com/gopher-json"
 )
-
-func getCSS() string {
-	return `
-		body {
-			background-color: #fdfdfd;
-			text-align: center;
-			font-family: Sans;
-		}
-
-		section {
-			display: block;
-			background: #ffffff;
-			border: 1px solid #F0F0F0;
-			border-radius: 9px;
-			text-align: left;
-			margin: 2rem auto 2rem auto;
-			width: 960px;
-			padding: 1rem;
-
-			-webkit-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.30);
-			-moz-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.30);
-			box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.30);
-		}
-
-		section header {
-			font-size: 2rem;
-		}
-
-		section ul {
-			list-style: none;
-			padding: 0px;
-			margin: 0 1rem;
-		}
-
-		section li {
-			border: 1px solid #F0F0F0;
-			border-radius: 9px;	
-			background-color: #FBFBFB;
-			padding: 1rem;
-			margin: 1rem 0 1rem 0;
-		}
-
-		section li span {
-			float: right;
-		}
-
-		span.healthy {
-			color: green;
-		}
-
-		span.sick {
-			color: red;
-		}
-
-		span.healthy .icon {
-			background-color: green;
-		}
-
-		span.sick .icon {
-			background-color: red;
-		}
-
-		span.icon {
-			border-radius: 4rem;
-			width: 1.2rem;
-			text-align: center;
-			margin-left: 1rem;
-			color: white;
-			font-weight: bold;
-		}
-
-`
-}
-
-func listingHTML() string {
-	return `
-<html>
-	<head>
-		<title>{{.Config.Title}}</title>
-		<meta http-equiv="refresh" content="{{.Config.Refresh}}">
-		<link rel="icon" 
-			type="image/png" 
-			href="{{.Config.Favicon}}">
-		<style>
-			{{.CSS}}
-		</style>
-	</head>
-	<body>
-	{{range .Services}}
-		<section>
-			<header>{{.Name}}</header>
-			<ul>
-				{{range .Checks}}
-				<li>
-					{{.Description}}
-					{{$status := .Status}}
-					<span class="{{$status.CSSIdent}}">{{$status.Name}}<span class="icon">{{$status.HTMLChar}}</span></span>
-				</li>
-				{{end}}
-			</ul>
-		</section>
-	{{end}}
-	</body>
-</html>
-`
-}
 
 type Status interface {
 	Name() string
@@ -335,12 +230,12 @@ func main() {
 			Services []Service
 			Config   config
 		}{
-			CSS:      getCSS(),
+			CSS:      static.DefaultCSS(),
 			Services: cfg.Services(),
 			Config:   cfg,
 		}
 
-		html := listingHTML()
+		html := static.HTML()
 
 		tmpl, err := template.New("page").Parse(html)
 		if err != nil {
