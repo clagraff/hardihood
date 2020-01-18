@@ -47,6 +47,19 @@ end
 """
 
 [[checks]]
+service = "HTTP Checker"
+description = "Is Google Up"
+lua = """
+local http = require("http")
+response, error_message = http.request("GET", "https://google.com")
+if response.status_code == 200 then
+    setHealthy()
+else
+    setSick()
+end
+"""
+
+[[checks]]
 service = "Module Loading"
 description = "Load a module"
 lua = """
