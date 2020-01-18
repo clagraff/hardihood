@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"html"
 	"log"
+	"math/rand"
 	"net/http"
 	"text/template"
 )
@@ -91,65 +91,124 @@ func listingHTML() string {
 		</style>
 	</head>
 	<body>
+	{{range .Services}}
 		<section>
-			<header>hardihood</header>
+			<header>{{.Name}}</header>
 			<ul>
+				{{range .Checks}}
 				<li>
-					CDN
-					<span class="healthy">Healthy <span class="icon">✓</span></span>
+					{{.Description}}
+					{{$status := .Status}}
+					<span class="{{$status.CSSIdent}}">{{$status.Name}}<span class="icon">{{$status.HTMLChar}}</span></span>
 				</li>
-				<li>
-					Conversions
-					<span class="sick">Outage <span class="icon">✕</span></span>
-				</li>
-				<li>
-					Site delivery
-					<span class="sick">Outage <span class="icon">✕</span></span>
-				</li>
-				<li>
-					API
-					<span class="healthy">Healthy <span class="icon">✓</span></span>
-				</li>
+				{{end}}
 			</ul>
 		</section>
-		<section>
-			<header>hardihood</header>
-			<ul>
-				<li>
-					CDN
-					<span class="healthy">Healthy</span>
-				</li>
-				<li>
-					Conversions
-					<span class="sick">Outage</span>
-				</li>
-				<li>
-					Site delivery
-					<span class="sick">Outage</span>
-				</li>
-				<li>
-					API
-					<span class="healthy">Healthy</span>
-				</li>
-			</ul>
-		</section>
-
+	{{end}}
 	</body>
 </html>
 `
 }
 
+type Status interface {
+	Name() string
+	CSSIdent() string
+	HTMLChar() string
+}
+
+type status struct {
+	name     string
+	cssIdent string
+	htmlChar string
+}
+
+func (s status) Name() string     { return s.name }
+func (s status) CSSIdent() string { return s.cssIdent }
+func (s status) HTMLChar() string { return s.htmlChar }
+
+func MakeStatus(name, cssIdent, htmlChar string) Status {
+	return status{
+		name:     name,
+		cssIdent: cssIdent,
+		htmlChar: htmlChar,
+	}
+}
+
+var Healthy Status = MakeStatus("Healthy", "healthy", "✓")
+var Sick Status = MakeStatus("Sick", "sick", "✕")
+
+type Check interface {
+	Description() string
+	Status() Status
+}
+
+type check struct {
+	description string
+	statusFn    func() Status
+}
+
+func (c check) Description() string { return c.description }
+func (c check) Status() Status      { return c.statusFn() }
+
+func MakeCheck(desc string, fn func() Status) Check {
+	return check{
+		description: desc,
+		statusFn:    fn,
+	}
+}
+
+type Service interface {
+	Name() string
+	Checks() []Check
+}
+
+type service struct {
+	name   string
+	checks []Check
+}
+
+func (s service) Name() string    { return s.name }
+func (s service) Checks() []Check { return s.checks }
+
+func MakeService(name string, checks []Check) Service {
+	return service{
+		name:   name,
+		checks: checks,
+	}
+}
+
 func main() {
+	exampleService := MakeService(
+		"example",
+		[]Check{
+			MakeCheck(
+				"Random number is even",
+				func() Status {
+					if rand.Intn(100)%2 == 0 {
+						return Healthy
+					}
+					return Sick
+				},
+			),
+			MakeCheck(
+				"Random number is odd",
+				func() Status {
+					if rand.Intn(100)%2 != 0 {
+						return Healthy
+					}
+					return Sick
+				},
+			),
+		},
+	)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-	})
-
-	http.HandleFunc("/hi", func(w http.ResponseWriter, r *http.Request) {
 		page := struct {
-			CSS string
+			CSS      string
+			Services []Service
 		}{
-			CSS: getCSS(),
+			CSS:      getCSS(),
+			Services: []Service{exampleService},
 		}
 
 		html := listingHTML()
