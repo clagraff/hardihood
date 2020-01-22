@@ -5,7 +5,7 @@ func HTML() string {
 <html>
 	<head>
 		<title>{{.Config.Title}}</title>
-		<meta http-equiv="refresh" content="{{.Config.Refresh}}">
+		<!--<meta http-equiv="refresh" content="{{.Config.Refresh}}">-->
 		<link rel="icon" 
 			type="image/png" 
 			href="{{.Config.Favicon}}">
@@ -19,10 +19,9 @@ func HTML() string {
 			<header>{{.Name}}</header>
 			<ul>
 				{{range .Checkups}}
-				<li>
-					{{.Description}}
-					{{$status := .Status}}
-					<span class="{{$status.CSSIdent}}">{{$status.Name}}<span class="icon">{{$status.HTMLChar}}</span></span>
+				{{$status := .Status}}
+				<li class="{{$status.CSSIdent}}">
+					{{$status.HTMLChar}} {{.Description}}
 				</li>
 				{{end}}
 			</ul>
