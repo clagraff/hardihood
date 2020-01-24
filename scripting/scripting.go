@@ -11,6 +11,7 @@ import (
 	"github.com/kohkimakimoto/gluayaml"
 	"github.com/yuin/gluare"
 	lua "github.com/yuin/gopher-lua"
+	luajson "layeh.com/gopher-json"
 )
 
 type statusResult struct {
@@ -52,7 +53,7 @@ type preload struct {
 	fn   *lua.LGFunction
 }
 
-type script struct {
+type luaScript struct {
 	name string
 	fn   *lua.LFunction
 }
@@ -65,7 +66,7 @@ type State interface {
 
 type state struct {
 	preloads []preload
-	scripts  []script
+	scripts  []luaScript
 }
 
 func (s *state) Preload(name string, fn *lua.LGFunction) {
@@ -81,7 +82,7 @@ func (s *state) Preload(name string, fn *lua.LGFunction) {
 func (s *state) Script(name string, fn *lua.LFunction) {
 	s.scripts = append(
 		s.scripts,
-		script{
+		luaScript{
 			name: name,
 			fn:   fn,
 		},
@@ -89,12 +90,12 @@ func (s *state) Script(name string, fn *lua.LFunction) {
 }
 
 func Execute(code string) status.Status {
-	result := new(luaStatusResult)
+	result := new(statusResult)
 
 	state := lua.NewState()
 	defer state.Close()
-	state.SetGlobal("setHealthy", state.NewFunction(result.IsHealthy))
-	state.SetGlobal("setSick", state.NewFunction(result.IsSick))
+	state.SetGlobal("setHealthy", state.NewFunction(result.SetHealthy))
+	state.SetGlobal("setSick", state.NewFunction(result.SetSick))
 	state.PreloadModule("http", gluahttp.NewHttpModule(&http.Client{}).Loader)
 	state.PreloadModule("re", gluare.Loader)
 	state.PreloadModule("json", luajson.Loader)
@@ -136,9 +137,9 @@ return M
 		fn,
 	)
 
-	err = state.DoString(c.luaScript)
+	err = state.DoString(code)
 	if err != nil {
-		fmt.Println(c.luaScript)
+		fmt.Println(code)
 		fmt.Println(err)
 		return status.Sick
 	}
